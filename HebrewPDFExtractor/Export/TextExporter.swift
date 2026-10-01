@@ -61,12 +61,24 @@ enum TextExporter {
         guard panel.runModal() == .OK, let folder = panel.url else { return false }
         ExportDestinationMemory.remember(folder: folder)
 
+        writeSeparateTXT(documents, in: folder)
+        return true
+    }
+
+    /// One `<source name>.txt` per document in `folder` (the writing half of "Save as .txt").
+    static func writeSeparateTXT(_ documents: [PDFDocumentItem], in folder: URL) {
         for document in documents {
             let baseName = document.sourceURL.deletingPathExtension().lastPathComponent
             let destination = folder.appendingPathComponent(baseName).appendingPathExtension("txt")
             try? document.extractedText.write(to: destination, atomically: true, encoding: .utf8)
         }
-        return true
+    }
+
+    /// All documents joined into one text (the content half of "One combined .txt file").
+    static func combinedText(_ documents: [PDFDocumentItem]) -> String {
+        documents
+            .map { "===== \($0.displayName) =====\n\($0.extractedText)" }
+            .joined(separator: "\n\n")
     }
 
     private static func exportCombined(_ documents: [PDFDocumentItem]) -> Bool {
@@ -81,11 +93,7 @@ enum TextExporter {
         guard panel.runModal() == .OK, let destination = panel.url else { return false }
         ExportDestinationMemory.remember(fileDestination: destination)
 
-        let combined = documents
-            .map { "===== \($0.displayName) =====\n\($0.extractedText)" }
-            .joined(separator: "\n\n")
-
-        try? combined.write(to: destination, atomically: true, encoding: .utf8)
+        try? combinedText(documents).write(to: destination, atomically: true, encoding: .utf8)
         return true
     }
 

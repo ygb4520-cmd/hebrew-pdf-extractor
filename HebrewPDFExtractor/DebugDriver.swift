@@ -122,6 +122,13 @@ final class DebugDriver {
                     }
                 }
             }
+        case "exporttxt":
+            TextExporter.writeSeparateTXT(coordinator.documents.filter { $0.status == .completed }, in: exportsDirectory)
+            note("exporttxt: wrote separate .txt files")
+        case "exportcombinedtxt":
+            let combined = TextExporter.combinedText(coordinator.documents.filter { $0.status == .completed })
+            try? combined.write(to: exportsDirectory.appendingPathComponent("Combined.txt"), atomically: true, encoding: .utf8)
+            note("exportcombinedtxt: wrote Combined.txt")
         case "exportpdf":
             for doc in coordinator.documents where doc.status == .completed {
                 let base = doc.sourceURL.deletingPathExtension().lastPathComponent
@@ -160,7 +167,7 @@ final class DebugDriver {
         let exported = (try? FileManager.default.contentsOfDirectory(atPath: exportsDirectory.path))?.sorted() ?? []
         out += "--- exports (\(exported.count)) in \(exportsDirectory.path) ---\n" + exported.joined(separator: "\n") + "\n"
         out += "--- log ---\n" + log.suffix(15).joined(separator: "\n") + "\n"
-        out += "--- commands: add <path> | select <i> | extract | hebrewonly on|off | maxchars <n> | split <afterLine> | exportjpg | exportsegmentsjpg | exportsegmentstxt | exportpdf | shot | quit ---\n"
+        out += "--- commands: add <path> | select <i> | extract | hebrewonly on|off | maxchars <n> | split <afterLine> | exportjpg | exportsegmentsjpg | exportsegmentstxt | exporttxt | exportcombinedtxt | exportpdf | shot | quit ---\n"
         try? out.write(to: directory.appendingPathComponent("status.txt"), atomically: true, encoding: .utf8)
     }
 
