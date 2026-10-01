@@ -65,11 +65,26 @@ enum TextExporter {
         return true
     }
 
+    /// A destination that never replaces anything: `<name>.<ext>` if that's free, otherwise
+    /// `<name> (2).<ext>`, `<name> (3).<ext>`, … Files are written one at a time, so this also keeps
+    /// two sources that share a name (e.g. `book.pdf` and `book.txt` exported as `.txt`) from
+    /// overwriting each other within a single export — and keeps "Save as .txt" on a `.txt` source
+    /// from overwriting the original when the export folder is the source's own folder.
+    static func uniqueURL(in folder: URL, name: String, ext: String) -> URL {
+        var url = folder.appendingPathComponent(name).appendingPathExtension(ext)
+        var counter = 2
+        while FileManager.default.fileExists(atPath: url.path) {
+            url = folder.appendingPathComponent("\(name) (\(counter))").appendingPathExtension(ext)
+            counter += 1
+        }
+        return url
+    }
+
     /// One `<source name>.txt` per document in `folder` (the writing half of "Save as .txt").
     static func writeSeparateTXT(_ documents: [PDFDocumentItem], in folder: URL) {
         for document in documents {
             let baseName = document.sourceURL.deletingPathExtension().lastPathComponent
-            let destination = folder.appendingPathComponent(baseName).appendingPathExtension("txt")
+            let destination = uniqueURL(in: folder, name: baseName, ext: "txt")
             try? document.extractedText.write(to: destination, atomically: true, encoding: .utf8)
         }
     }
@@ -127,7 +142,7 @@ enum TextExporter {
         let height = TextImageRenderer.imageHeight(for: text)
         if height <= TextImageRenderer.maxJPEGHeight {
             guard let image = TextImageRenderer.renderImage(for: text),
-                  JPEGWriter.write(image, to: folder.appendingPathComponent(name).appendingPathExtension("jpg")) else {
+                  JPEGWriter.write(image, to: uniqueURL(in: folder, name: name, ext: "jpg")) else {
                 if interactive { showExportFailure("\"\(name)\" couldn't be saved as a .jpg.") }
                 return 0
             }
@@ -147,7 +162,7 @@ enum TextExporter {
         let images = TextImageRenderer.renderImages(for: text)
         var written = 0
         for (index, image) in images.enumerated() {
-            let url = folder.appendingPathComponent("\(name) (\(index + 1) of \(images.count))").appendingPathExtension("jpg")
+            let url = uniqueURL(in: folder, name: "\(name) (\(index + 1) of \(images.count))", ext: "jpg")
             if JPEGWriter.write(image, to: url) {
                 written += 1
             } else if interactive {
@@ -185,11 +200,10 @@ enum TextExporter {
         ExportDestinationMemory.remember(folder: folder)
 
         for (index, segment) in segments.enumerated() {
-            let destinationBase = folder.appendingPathComponent("\(baseName) - part \(index + 1)")
-            if asImage {
+                        if asImage {
                 writeJPEGs(for: segment, named: "\(baseName) - part \(index + 1)", in: folder)
             } else {
-                try? segment.write(to: destinationBase.appendingPathExtension("txt"), atomically: true, encoding: .utf8)
+                try? segment.write(to: uniqueURL(in: folder, name: "\(baseName) - part \(index + 1)", ext: "txt"), atomically: true, encoding: .utf8)
             }
         }
         return true
@@ -209,7 +223,7 @@ enum TextExporter {
 
         for document in documents {
             let baseName = document.sourceURL.deletingPathExtension().lastPathComponent
-            let destination = folder.appendingPathComponent(baseName).appendingPathExtension("pdf")
+            let destination = uniqueURL(in: folder, name: baseName, ext: "pdf")
             TextImageRenderer.renderPDF(for: document.extractedText, to: destination)
         }
         return true
@@ -230,7 +244,7 @@ enum TextExporter {
         for document in documents {
             guard let image = TextImageRenderer.renderImage(for: document.extractedText) else { continue }
             let baseName = document.sourceURL.deletingPathExtension().lastPathComponent
-            let destination = folder.appendingPathComponent(baseName).appendingPathExtension("png")
+            let destination = uniqueURL(in: folder, name: baseName, ext: "png")
             PNGWriter.write(image, to: destination)
         }
         return true
@@ -250,7 +264,7 @@ enum TextExporter {
 
         for document in documents {
             let baseName = document.sourceURL.deletingPathExtension().lastPathComponent
-            let destination = folder.appendingPathComponent(baseName).appendingPathExtension(format.fileExtension)
+            let destination = uniqueURL(in: folder, name: baseName, ext: format.fileExtension)
             RichDocumentExporter.write(document.extractedText, format: format, to: destination)
         }
         return true
@@ -270,7 +284,7 @@ enum TextExporter {
 
         for document in documents {
             let baseName = document.sourceURL.deletingPathExtension().lastPathComponent
-            let destination = folder.appendingPathComponent(baseName).appendingPathExtension("epub")
+            let destination = uniqueURL(in: folder, name: baseName, ext: "epub")
             try? EPUBExporter.write(document.extractedText, title: baseName, to: destination)
         }
         return true
@@ -295,7 +309,7 @@ enum TextExporter {
                 guard let page = pdf.page(at: pageIndex),
                       let image = PDFPageRasterizer.renderCGImage(for: page, scale: 2.0) else { continue }
                 let suffix = pdf.pageCount > 1 ? "_page\(pageIndex + 1)" : ""
-                let destination = folder.appendingPathComponent("\(baseName)\(suffix)").appendingPathExtension("jpg")
+                let destination = uniqueURL(in: folder, name: "\(baseName)\(suffix)", ext: "jpg")
                 JPEGWriter.write(image, to: destination)
             }
         }

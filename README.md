@@ -296,6 +296,16 @@ lays out left-aligned) wrongly right-aligned English. A paragraph with no letter
 digits only) defaults to right-to-left. Verified with a mixed Hebrew/English sample in both the
 renderer and the preview text view; pure-Hebrew output is pixel-identical to before.
 
+**Exports never overwrite existing files.** Every export (`.txt`, `.jpg`, `.png`, PDF, Word/RTF/ODT/
+HTML, EPUB, split segments and auto-split image parts) picks a free name: `name.ext`, else
+`name (2).ext`, `name (3).ext`, … (`TextExporter.uniqueURL`). Previously exporting could silently
+replace a file — including your original source: "Save as .txt" on a `.txt` offers the source's own
+folder first and used the same filename, and two sources sharing a name (`book.pdf` + `book.txt`)
+overwrote each other within one export. Verified with the debug driver: repeated exports of two
+same-named sources produced four distinct files, and exporting a `.txt` into its own folder left the
+original byte-identical. The one exception is "One combined .txt file", which uses the standard macOS
+save panel and so already asks before replacing.
+
 **Long-text image/PDF export bug: CoreText reverses every line of a long block of Hebrew.** Exporting
 a long text (e.g. a whole Siddur segment) as `.jpg`/`.png`/`.pdf` produced images where every line's
 letters were spelled backwards (still right-aligned), even though the preview and `.txt` export were
