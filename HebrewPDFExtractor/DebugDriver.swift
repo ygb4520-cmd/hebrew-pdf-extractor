@@ -117,11 +117,13 @@ final class DebugDriver {
                         let n = TextExporter.writeJPEGs(for: seg, named: fileName, in: exportsDirectory, autoSplit: true)
                         note("segment \(i + 1): wrote \(n) jpg(s)")
                     } else {
-                        try? seg.write(to: exportsDirectory.appendingPathComponent(fileName + ".txt"), atomically: true, encoding: .utf8)
+                        try? TextExporter.txtContent(seg).write(to: exportsDirectory.appendingPathComponent(fileName + ".txt"), atomically: true, encoding: .utf8)
                         note("segment \(i + 1): wrote txt")
                     }
                 }
             }
+        case "plainpunct":
+            TextExporter.plainPunctuationOverride = (arg.lowercased() == "on")
         case "exporttxt":
             TextExporter.writeSeparateTXT(coordinator.documents.filter { $0.status == .completed }, in: exportsDirectory)
             note("exporttxt: wrote separate .txt files")
@@ -167,7 +169,7 @@ final class DebugDriver {
         let exported = (try? FileManager.default.contentsOfDirectory(atPath: exportsDirectory.path))?.sorted() ?? []
         out += "--- exports (\(exported.count)) in \(exportsDirectory.path) ---\n" + exported.joined(separator: "\n") + "\n"
         out += "--- log ---\n" + log.suffix(15).joined(separator: "\n") + "\n"
-        out += "--- commands: add <path> | select <i> | extract | hebrewonly on|off | maxchars <n> | split <afterLine> | exportjpg | exportsegmentsjpg | exportsegmentstxt | exporttxt | exportcombinedtxt | exportpdf | shot | quit ---\n"
+        out += "--- commands: add <path> | select <i> | extract | hebrewonly on|off | plainpunct on|off | maxchars <n> | split <afterLine> | exportjpg | exportsegmentsjpg | exportsegmentstxt | exporttxt | exportcombinedtxt | exportpdf | shot | quit ---\n"
         try? out.write(to: directory.appendingPathComponent("status.txt"), atomically: true, encoding: .utf8)
     }
 

@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var isTargeted = false
     @State private var isTargetedAnywhere = false
     @State private var showDiscardEditsConfirmation = false
+    @AppStorage(TextExporter.plainPunctuationKey) private var plainPunctuationTXT = false
 
     private var selectedDocument: PDFDocumentItem? {
         coordinator.documents.first { $0.id == selectedDocumentID }
@@ -132,6 +133,8 @@ struct ContentView: View {
             }
 
             Menu {
+                Toggle("Plain punctuation in .txt (for MP3 players)", isOn: $plainPunctuationTXT)
+                Divider()
                 Button(coordinator.hasMultipleCompletedDocuments ? "Separate .txt file per source" : "Save as .txt") {
                     TextExporter.export(coordinator.documents, mode: .separateFiles)
                 }

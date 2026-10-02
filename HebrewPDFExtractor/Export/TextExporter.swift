@@ -65,6 +65,20 @@ enum TextExporter {
         return true
     }
 
+    /// "Plain punctuation in .txt" (set from the Export menu; remembered across launches). The debug
+    /// driver sets `plainPunctuationOverride` instead so tests never touch the user's saved setting.
+    static let plainPunctuationKey = "plainPunctuationTXT"
+    static var plainPunctuationOverride: Bool?
+
+    static var plainPunctuationEnabled: Bool {
+        plainPunctuationOverride ?? UserDefaults.standard.bool(forKey: plainPunctuationKey)
+    }
+
+    /// The text to write into a `.txt` file, honoring the plain-punctuation option.
+    static func txtContent(_ text: String) -> String {
+        plainPunctuationEnabled ? PlainPunctuation.apply(text) : text
+    }
+
     /// A destination that never replaces anything: `<name>.<ext>` if that's free, otherwise
     /// `<name> (2).<ext>`, `<name> (3).<ext>`, … Files are written one at a time, so this also keeps
     /// two sources that share a name (e.g. `book.pdf` and `book.txt` exported as `.txt`) from
@@ -85,15 +99,15 @@ enum TextExporter {
         for document in documents {
             let baseName = document.sourceURL.deletingPathExtension().lastPathComponent
             let destination = uniqueURL(in: folder, name: baseName, ext: "txt")
-            try? document.extractedText.write(to: destination, atomically: true, encoding: .utf8)
+            try? txtContent(document.extractedText).write(to: destination, atomically: true, encoding: .utf8)
         }
     }
 
     /// All documents joined into one text (the content half of "One combined .txt file").
     static func combinedText(_ documents: [PDFDocumentItem]) -> String {
-        documents
+        txtContent(documents
             .map { "===== \($0.displayName) =====\n\($0.extractedText)" }
-            .joined(separator: "\n\n")
+            .joined(separator: "\n\n"))
     }
 
     private static func exportCombined(_ documents: [PDFDocumentItem]) -> Bool {
@@ -203,7 +217,7 @@ enum TextExporter {
                         if asImage {
                 writeJPEGs(for: segment, named: "\(baseName) - part \(index + 1)", in: folder)
             } else {
-                try? segment.write(to: uniqueURL(in: folder, name: "\(baseName) - part \(index + 1)", ext: "txt"), atomically: true, encoding: .utf8)
+                try? txtContent(segment).write(to: uniqueURL(in: folder, name: "\(baseName) - part \(index + 1)", ext: "txt"), atomically: true, encoding: .utf8)
             }
         }
         return true

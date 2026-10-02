@@ -306,6 +306,17 @@ same-named sources produced four distinct files, and exporting a `.txt` into its
 original byte-identical. The one exception is "One combined .txt file", which uses the standard macOS
 save panel and so already asks before replacing.
 
+**"Plain punctuation in .txt (for MP3 players)" option.** A cheap MP3 player (Getco Zed5) showed the
+apostrophe in `'s`/`'d` as Chinese characters. The curly apostrophe (’) is three bytes in UTF-8, and a
+reader that assumes a legacy Chinese encoding (GBK) decodes those bytes as CJK; plain ASCII is the
+same bytes in every encoding. This is the likely cause, inferred rather than confirmed on the device.
+The Export menu now has a checkbox (remembered across launches) that, for `.txt` exports (separate,
+combined and split segments), turns curly apostrophes/quotes (’ ‘ “ ”), dashes (– —), ellipsis (…),
+bullets, non-breaking/thin spaces and zero-width characters into plain keyboard equivalents
+(`PlainPunctuation`). Hebrew letters, niqqud, maqaf, geresh and gershayim are left alone. Verified
+byte-for-byte via the debug driver (`plainpunct on|off`). Hebrew *encoding* on the device (which
+legacy codepage it expects) is a separate question and is not handled.
+
 **Long-text image/PDF export bug: CoreText reverses every line of a long block of Hebrew.** Exporting
 a long text (e.g. a whole Siddur segment) as `.jpg`/`.png`/`.pdf` produced images where every line's
 letters were spelled backwards (still right-aligned), even though the preview and `.txt` export were
